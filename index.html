@@ -351,7 +351,7 @@
 
     // Kategorien / Begriffe
     let kategorien = {};           // alle Kategorien + Begriffe
-    let aktiveKategorie = null;    // aktuell gewählt
+    let aktiveKategorien = [];     // aktuell gewählt
     let aktuellerBegriff = null;   // gezogener Begriff
 
     // Timer
@@ -445,12 +445,13 @@
 
     // ----------- Kategorien/Begriff ziehen -----------
     function zieheBegriff() {
-      if (!aktiveKategorie) {
+      if (!aktiveKategorien.length) {
         const keys = Object.keys(kategorien);
-        aktiveKategorie = keys[Math.floor(Math.random() * keys.length)];
-        updateCategoryButtonLabel();
+        aktiveKategorien = [keys[Math.floor(Math.random() * keys.length)]];
       }
-      const begriffe = kategorien[aktiveKategorie];
+
+      const zufallsKategorie = aktiveKategorien[Math.floor(Math.random() * aktiveKategorien.length)];
+      const begriffe = kategorien[zufallsKategorie];
       aktuellerBegriff = begriffe[Math.floor(Math.random() * begriffe.length)];
     }
 
