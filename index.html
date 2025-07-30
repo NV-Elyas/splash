@@ -353,6 +353,7 @@
     let kategorien = {};           // alle Kategorien + Begriffe
     let aktiveKategorien = [];     // aktuell gewählt
     let aktuellerBegriff = null;   // gezogener Begriff
+    let tmpSelectedCategories = [];
 
     // Timer
     let timerActive = false;
@@ -365,6 +366,7 @@
       .then(res => res.json())
       .then(data => {
         kategorien = data;
+        aktiveKategorien = []; // noch keine gewählt
         updateCategoryButtonLabel();
       })
       .catch(err => console.error("Fehler beim Laden:", err));
@@ -384,17 +386,26 @@
 
     function updateCategoryButtonLabel() {
       const btn = document.querySelector('button.btn-chip[onclick*="openCatModal"]');
-      if(btn) btn.textContent = aktiveKategorie ? aktiveKategorie : 'Auswählen';
+      if (btn) {
+        btn.textContent = aktiveKategorien.length 
+          ? `${aktiveKategorien.length} gewählt` 
+          : 'Auswählen';
+      }
       const badge = $('#catBadge');
-      if(badge) badge.textContent = aktiveKategorie ? aktiveKategorie : 'Zufällig';
+      if (badge) {
+        badge.textContent = aktiveKategorien.length 
+          ? aktiveKategorien.join(', ') 
+          : 'Zufällig';
+      }
     }
 
-    function openCatModal(){
-      if(Object.keys(kategorien).length === 0){
+    function openCatModal() {
+      if (Object.keys(kategorien).length === 0) {
         alert("Kategorien werden noch geladen...");
         return;
       }
-      tmpSelectedCategory = aktiveKategorie;
+      // Aktuell gewählte Kategorien kopieren
+      tmpSelectedCategories = [...aktiveKategorien];
       buildCategoryList();
       $('#catSearch').value = '';
       $('#catModal').classList.add('show');
@@ -412,12 +423,17 @@
         .filter(k => k.toLowerCase().includes(filter.toLowerCase()));
       keys.forEach(k=>{
         const item = document.createElement('div');
-        item.className = 'cat-item' + (tmpSelectedCategory===k?' active':'');
+        item.className = 'cat-item' + (tmpSelectedCategories.includes(k) ? ' active' : '');
         item.innerHTML = `<span>${k}</span> <span class="muted">${kategorien[k].length} Begriffe</span>`;
-        item.onclick = ()=>{
-          tmpSelectedCategory = k;
-          document.querySelectorAll('.cat-item').forEach(el=>el.classList.remove('active'));
-          item.classList.add('active');
+        item.onclick = () => {
+          const index = tmpSelectedCategories.indexOf(k);
+          if (index > -1) {
+            tmpSelectedCategories.splice(index, 1); // abwählen
+            item.classList.remove('active');
+          } else {
+            tmpSelectedCategories.push(k); // auswählen
+            item.classList.add('active');
+          }
         };
         list.appendChild(item);
       });
@@ -434,15 +450,14 @@
     function chooseRandom(){
       const keys = Object.keys(kategorien);
       if(!keys.length) return;
-      tmpSelectedCategory = keys[Math.floor(Math.random()*keys.length)];
+      tmpSelectedCategories = [keys[Math.floor(Math.random()*keys.length)]];
       applyCategory();
     }
-    function applyCategory(){
-      aktiveKategorie = tmpSelectedCategory || null;
+    function applyCategory() {
+      aktiveKategorien = [...tmpSelectedCategories];
       updateCategoryButtonLabel();
       closeCatModal();
     }
-
     // ----------- Kategorien/Begriff ziehen -----------
     function zieheBegriff() {
       if (!aktiveKategorien.length) {
