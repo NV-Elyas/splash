@@ -182,6 +182,22 @@
     .cat-item:active{ transform:scale(.995); }
     .cat-item.active{ outline:2px solid var(--acc); }
     .modal-footer{ display:flex; gap:10px; }
+    /* --------- Lügner-Spiel Ergänzungen --------- */
+    .answer-input{
+      width:100%; padding:14px; border:none; border-radius:12px;
+      background:#2a2a30; color:#fff; font-size:1rem; outline:none;
+    }
+    .answers-grid{
+      display:grid; gap:12px;
+      grid-template-columns: repeat(auto-fill, minmax(240px,1fr));
+    }
+    .answer-card{
+      background:#22232a; border:1px solid #32333b; border-radius:16px;
+      padding:12px 14px; box-shadow: 0 6px 16px rgba(0,0,0,.25);
+    }
+    .answer-name{ font-weight:800; margin-bottom:6px }
+    .answer-text{ font-size:1.02rem; line-height:1.4 }
+    .answer-card.liar{ outline:3px solid var(--acc) }
   </style>
 </head>
 <body>
@@ -193,7 +209,7 @@
         <span class="badge">3–20</span>
         <div class="card-title">FINDET DEN IMPOSTER</div>
       </div>
-      <div class="game-card-link liar-cover" onclick="alert('Finde den Lügner wird momentan noch entwickelt.')">
+      <div class="game-card-link liar-cover" onclick="navTo('liar-setup')">
         <span class="badge">3–8</span>
         <div class="card-title">FINDE DEN LÜGNER</div>
       </div>
@@ -322,6 +338,109 @@
       Für dieses Spiel gibt es keinen festen Ablauf – deckt den/die Imposter auf, sobald ihr euch einig seid.
     </div>
   </section>
+
+    <!-- ============ Lügner – Setup ============ -->
+  <section id="liar-setup" class="screen">
+    <div class="topbar">
+      <button class="back" onclick="navTo('start')">‹ Zurück</button>
+      <div class="muted">Finde den Lügner – Setup</div>
+      <div style="width:84px"></div>
+    </div>
+
+    <h1 class="title">Spieler</h1>
+    <div class="panel">
+      <div class="row">
+        <input id="liarPlayerInput" type="text" placeholder="Spielername eingeben"
+              onkeydown="if(event.key==='Enter') liarAddPlayer()" />
+        <button class="btn-chip" onclick="liarAddPlayer()">+ Hinzufügen</button>
+      </div>
+      <div id="liarPlayerList"></div>
+      <div class="row" style="margin-top:8px;">
+        <div class="muted" id="liarPlayerCount">0 Spieler</div>
+        <div class="muted">min. 3 • max. 15</div>
+      </div>
+    </div>
+
+    <h2 class="title" style="margin-top:8px">Lügner</h2>
+    <div class="panel">
+      <div class="row">
+        <div>Wie viele?</div>
+        <select id="liarCount">
+          <option value="1" selected>1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+        </select>
+      </div>
+      <div class="row">
+        <div>Kategorien</div>
+        <div style="display:flex; gap:8px; align-items:center">
+          <div id="liarCatBadge" class="muted" style="min-width:100px; text-align:right">Zufällig</div>
+          <button class="btn-chip" onclick="liarOpenCatModal()">Auswählen</button>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn" style="margin-top:10px" onclick="liarBeginCards()">Spiel starten</button>
+  </section>
+
+  <!-- ============ Lügner – Karten/Aufdecken + Frage/Antwort ============ -->
+  <section id="liar-cards" class="screen" style="background:#6c7cff;">
+    <div class="topbar" style="margin-bottom:6px">
+      <button class="back" onclick="liarRestartToSetup()">‹ Setup</button>
+      <div style="font-weight:800">Finde den Lügner</div>
+      <div style="width:84px"></div>
+    </div>
+
+    <div id="liarCardPlayerName" class="game-hero">Spieler</div>
+
+    <div id="liarRevealCard" class="reveal-card hidden" onclick="liarRevealCurrent()">
+      <div id="liarCardMainText">Karte aufdecken</div>
+    </div>
+
+    <div id="liarAnswerWrap" class="panel" style="display:none; margin-top:10px">
+      <div class="muted" id="liarQuestionShown">Frage …</div>
+      <input id="liarAnswerInput" class="answer-input" placeholder="Deine Antwort" />
+    </div>
+
+    <button id="liarNextBtn" class="btn" style="display:none; margin-top:12px" onclick="liarNextCard()">Weitergeben</button>
+    <div class="muted" style="margin-top:auto">Tippe zum Aufdecken, antworte – und gib weiter.</div>
+  </section>
+
+  <!-- ============ Lügner – Antworten/Übersicht ============ -->
+  <section id="liar-results" class="screen">
+    <div class="topbar">
+      <button class="back" onclick="liarRestartToSetup()">‹ Setup</button>
+      <div style="font-weight:800">Finde den Lügner</div>
+      <div style="width:84px"></div>
+    </div>
+
+    <h1 id="liarPublicQuestion" class="game-hero">Frage</h1>
+
+    <div class="answers-grid" id="liarAnswersGrid"></div>
+
+    <button class="btn" style="margin-top:16px" onclick="liarRevealLiars()">Lügner aufdecken</button>
+    <button class="btn-secondary" style="margin-top:8px" onclick="navTo('start')">Neustart</button>
+  </section>
+
+  <!-- ===== Lügner – Kategorien-Modal ===== -->
+  <div id="liarCatModal" class="modal">
+    <div class="modal-backdrop" onclick="liarCloseCatModal()"></div>
+    <div class="modal-panel">
+      <div class="modal-header">
+        <div style="font-weight:800">Kategorie(n) wählen</div>
+        <button class="modal-close" onclick="liarCloseCatModal()">✕</button>
+      </div>
+
+      <input id="liarCatSearch" type="text" class="modal-search" placeholder="Suchen..." oninput="liarFilterCategories()" />
+      <div id="liarCatList" class="cat-list"></div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="liarChooseRandom()">🎲 Zufällig</button>
+        <button class="btn" onclick="liarApplyCategories()">Übernehmen</button>
+      </div>
+    </div>
+  </div>
+
 
   <!-- ===== Kategorien-Modal ===== -->
   <div id="catModal" class="modal">
@@ -653,6 +772,244 @@
     // Demo: ein paar Startnamen
     players = ['Spieler 1','Spieler 2','Spieler 3'];
     renderPlayers();
+    // =====================================================
+    // ============ Lügner: State & Laden Fragen ============
+    // =====================================================
+    let liarPlayers = [];
+    let liarIndices = [];        // Index(e) der Lügner
+    let liarCurrentIndex = 0;
+
+    let liarCategories = {};     // Daten aus fragen.json -> {Kategorie:[{frage, lügner}, ...]}
+    let liarActiveCategories = [];
+    let liarTmpSelected = [];
+
+    let liarAssigned = [];       // pro Spieler: {question: string, isLiar: boolean}
+    let liarAnswers = [];        // pro Spieler: string
+    let liarPublicQuestion = ""; // die „normale“ Frage, die allen angezeigt wird
+
+    // Fragen laden
+    fetch("fragen.json")
+      .then(r => r.json())
+      .then(data => {
+        liarCategories = data;
+        liarUpdateCatBadge();
+      })
+      .catch(err => console.error("Fehler beim Laden der Fragen:", err));
+
+    // =====================================================
+    // ============ Lügner: Setup / Spieler UI =============
+    // =====================================================
+    function liarRenderPlayers(){
+      const list = document.getElementById('liarPlayerList');
+      list.innerHTML = '';
+      liarPlayers.forEach((name, i) => {
+        const row = document.createElement('div');
+        row.className = 'player-item';
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = name;
+        input.className = 'player-name-input';
+        input.onchange = () => { liarPlayers[i] = input.value.trim() || `Spieler ${i+1}`; };
+
+        const del = document.createElement('button');
+        del.className = 'del';
+        del.textContent = 'Entfernen';
+        del.onclick = () => { liarPlayers.splice(i,1); liarRenderPlayers(); };
+
+        row.appendChild(input);
+        row.appendChild(del);
+        list.appendChild(row);
+      });
+      document.getElementById('liarPlayerCount').textContent = `${liarPlayers.length} Spieler`;
+    }
+    function liarAddPlayer(){
+      const inp = document.getElementById('liarPlayerInput');
+      const name = inp.value.trim();
+      if(!name) return;
+      if(liarPlayers.length >= 15){ alert('Maximal 15 Spieler.'); return; }
+      liarPlayers.push(name);
+      inp.value = '';
+      liarRenderPlayers();
+    }
+
+    // =====================================================
+    // ============ Lügner: Kategorien-Modal ===============
+    // =====================================================
+    function liarUpdateCatBadge(){
+      const badge = document.getElementById('liarCatBadge');
+      badge.textContent = liarActiveCategories.length ? liarActiveCategories.join(', ') : 'Zufällig';
+    }
+    function liarOpenCatModal(){
+      if(Object.keys(liarCategories).length === 0){
+        alert("Kategorien werden noch geladen...");
+        return;
+      }
+      liarTmpSelected = [...liarActiveCategories];
+      liarBuildCatList();
+      document.getElementById('liarCatSearch').value = '';
+      document.getElementById('liarCatModal').classList.add('show');
+      document.body.style.overflow = 'hidden';
+    }
+    function liarCloseCatModal(){
+      document.getElementById('liarCatModal').classList.remove('show');
+      document.body.style.overflow = '';
+    }
+    function liarBuildCatList(filter=''){
+      const list = document.getElementById('liarCatList');
+      list.innerHTML = '';
+      let keys = Object.keys(liarCategories)
+        .filter(k => k.toLowerCase().includes(filter.toLowerCase()))
+        .sort((a, b) => {
+          if (a === "18+") return 1;
+          if (b === "18+") return -1;
+          return a.localeCompare(b, 'de');
+      });
+      keys.forEach(k=>{
+        const item = document.createElement('div');
+        item.className = 'cat-item' + (liarTmpSelected.includes(k) ? ' active' : '');
+        item.innerHTML = `<span>${k}</span> <span class="muted">${liarCategories[k].length} Fragen</span>`;
+        item.onclick = ()=>{
+          const idx = liarTmpSelected.indexOf(k);
+          if(idx>-1){ liarTmpSelected.splice(idx,1); item.classList.remove('active'); }
+          else{ liarTmpSelected.push(k); item.classList.add('active'); }
+        };
+        list.appendChild(item);
+      });
+      if(keys.length===0){
+        const empty = document.createElement('div');
+        empty.className='muted'; empty.style.padding='8px 4px';
+        empty.textContent='Keine Treffer';
+        list.appendChild(empty);
+      }
+    }
+    function liarFilterCategories(){ liarBuildCatList(document.getElementById('liarCatSearch').value.trim()); }
+    function liarChooseRandomCategory() {
+      const keys = Object.keys(liarCategories)
+        .filter(k => k !== "18+" && k !== "Dark & Tabu"); // diese beiden ausschließen
+
+      if (!keys.length) return;
+
+      tmpSelectedLiarCategories = [keys[Math.floor(Math.random() * keys.length)]];
+      applyLiarCategory();
+    }
+    function liarApplyCategories(){
+      liarActiveCategories = [...liarTmpSelected];
+      liarUpdateCatBadge();
+      liarCloseCatModal();
+    }
+
+    // =====================================================
+    // ============ Lügner: Flow – Start -> Karten =========
+    // =====================================================
+    function liarBeginCards(){
+      if(liarPlayers.length < 3){ alert('Mindestens 3 Spieler!'); return; }
+
+      // Lügner wählen
+      const count = parseInt(document.getElementById('liarCount').value,10);
+      liarIndices = [];
+      while(liarIndices.length < count){
+        const r = Math.floor(Math.random()*liarPlayers.length);
+        if(!liarIndices.includes(r)) liarIndices.push(r);
+      }
+
+      // Frage aus Kategorie(n) ziehen
+      if(!liarActiveCategories.length){
+        const keys = Object.keys(liarCategories);
+        liarActiveCategories = [ keys[Math.floor(Math.random()*keys.length)] ];
+      }
+      const cat = liarActiveCategories[Math.floor(Math.random()*liarActiveCategories.length)];
+      const pair = liarCategories[cat][ Math.floor(Math.random()*liarCategories[cat].length) ];
+      // pair: { frage, lügner }
+
+      liarAssigned = liarPlayers.map((_,i)=>({
+        question: liarIndices.includes(i) ? pair["lügner"] : pair["frage"],
+        isLiar: liarIndices.includes(i)
+      }));
+      liarAnswers = new Array(liarPlayers.length).fill('');
+
+      liarPublicQuestion = pair["frage"]; // diese zeigen wir später oben an
+
+      liarCurrentIndex = 0;
+      navTo('liar-cards');
+      liarShowCardUI();
+    }
+    function liarShowCardUI(){
+      document.getElementById('liarCardPlayerName').textContent = liarPlayers[liarCurrentIndex];
+
+      const card = document.getElementById('liarRevealCard');
+      card.classList.add('hidden');
+      document.getElementById('liarCardMainText').textContent = 'Karte aufdecken';
+
+      // Antwortbereich resetten
+      document.getElementById('liarAnswerWrap').style.display = 'none';
+      document.getElementById('liarAnswerInput').value = '';
+
+      const btn = document.getElementById('liarNextBtn');
+      btn.textContent = (liarCurrentIndex === liarPlayers.length-1) ? 'Zur Übersicht' : 'Weitergeben';
+      btn.style.display = 'none';
+    }
+    function liarRevealCurrent(){
+      const card = document.getElementById('liarRevealCard');
+      if(!card.classList.contains('hidden')) return;
+      const q = liarAssigned[liarCurrentIndex].question;
+      document.getElementById('liarCardMainText').textContent = q;
+      card.classList.remove('hidden');
+
+      document.getElementById('liarQuestionShown').textContent = q;
+      document.getElementById('liarAnswerWrap').style.display = 'block';
+      document.getElementById('liarNextBtn').style.display = 'block';
+    }
+    function liarSaveAnswer(){
+      const v = document.getElementById('liarAnswerInput').value.trim();
+      liarAnswers[liarCurrentIndex] = v || '—';
+      alert('Antwort gespeichert');
+    }
+    function liarNextCard(){
+      const input = document.getElementById('liarAnswerInput');
+      if (input) {
+        liarAnswers[liarCurrentIndex] = input.value.trim() || '—';
+      }
+
+      if (liarCurrentIndex === liarPlayers.length - 1) {
+        navTo('liar-results');
+        liarBuildResults();
+      } else {
+        liarCurrentIndex++;
+        liarShowCardUI();
+      }
+    }
+    function liarRestartToSetup(){
+      navTo('liar-setup');
+    }
+
+    // =====================================================
+    // ============ Lügner: Ergebnisse + Reveal ============
+    // =====================================================
+    function liarBuildResults(){
+      document.getElementById('liarPublicQuestion').textContent = liarPublicQuestion;
+      const grid = document.getElementById('liarAnswersGrid');
+      grid.innerHTML = '';
+      liarPlayers.forEach((name,i)=>{
+        const card = document.createElement('div');
+        card.className = 'answer-card';
+        card.dataset.index = String(i);
+        card.innerHTML = `
+          <div class="answer-name">${name}</div>
+          <div class="answer-text">${(liarAnswers[i]||'—')}</div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+    function liarRevealLiars(){
+      const grid = document.getElementById('liarAnswersGrid');
+      liarIndices.forEach(i=>{
+        const el = grid.querySelector(`.answer-card[data-index="${i}"]`);
+        if(el) el.classList.add('liar');
+      });
+    }
+    liarPlayers = ['Spieler 1','Spieler 2','Spieler 3'];
+    liarRenderPlayers();
   </script>
 </body>
 </html>
